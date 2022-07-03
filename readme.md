@@ -4,6 +4,12 @@ Use randomization or brute force to recover a damaged BTC key.
 
 Supports compressed WIF keys.
 
+### Requirements:
+
+Have a damaged BTC key with a few characters missing.
+
+
+
 #### Benchmarks on a 2.9 GHz Dual-Core Intel Core i5:
 
 | Missing Characters | Maximum Time To Recover |

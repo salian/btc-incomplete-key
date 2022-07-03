@@ -1,5 +1,8 @@
 import json
 import string
+import secrets
+from typing import Generator
+from random import SystemRandom as RND
 import re
 import trotter
 from tqdm import tqdm
@@ -11,17 +14,21 @@ from btc_com import explorer as btc_explorer
 # test key: 'L5EZftvrYaSudiozVRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
 # test mask: 'L5EZftvrYaSu****VRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
 # corresponding address: '1EUXSxuUVy2PC5enGXR1a3yxbEjNWMHuem'
-masked_key = 'L5EZftvrYaSu****VRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
 
-# Masked_key should be like 'L5EZftvrYaSu****VRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
-# with asterisks replacing unknown characters
-# Note: Only supports a single contiguous mask.
+# masked_key = 'L5EZftvrYaSu******zTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
+# masked_key = 'L5EZftvrYaSu************LNDoVn7H5HSfM9BAN6tMJX8oTWz6'
+masked_key = 'L5EZftvrYa*udiozVRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
+
+# Masked_key should be like 'L5EZftvrYaSu****V*zTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
+# with asterisks replacing unknown characters. Positions of unknown characters MUST be known.
 
 
-def complete_key(masked_key, missing_letters):
+def complete_key(masked_key_string, missing_letters):
     # Usage: print(complete_key("secret_password_***_is_secret", 'swordfish'))
-    completed_key = re.sub(r"\*+", missing_letters, masked_key)
-    return completed_key
+    for letter in missing_letters:
+        masked_key_string = masked_key_string.replace('*', letter, 1)  # replace each asterisk with a letter once
+    # print(f"masked_key_string: {masked_key_string}")
+    return masked_key_string
 
 
 def fetch_balance_for_btc_address(btc_address):
@@ -57,7 +64,8 @@ def btc_address_from_private_key(my_secret, secret_type='WIF'):
 if __name__ == '__main__':
     missing_length = masked_key.count('*')
     print(f"Looking for {missing_length} characters in {masked_key}")
-    allowed_characters = string.ascii_lowercase + string.digits  # "abcdefghijklmnopqrstuvwxyz0123456789"
+    allowed_characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
+    # "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" as keys are case-sensitive
     missing_letters_master_list = trotter.Amalgams(missing_length, allowed_characters)
     # print(missing_letters_master_list)
     # print(len(missing_letters_master_list))
