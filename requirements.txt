@@ -1,0 +1,14 @@
+base58==2.1.1
+btc-com==0.0.1
+certifi==2022.6.15
+charset-normalizer==2.1.0
+ecdsa==0.17.0
+hdwallet==2.1.1
+idna==3.3
+mnemonic==0.20
+pysha3==1.0.2
+requests==2.28.1
+six==1.16.0
+tqdm==4.64.0
+trotter==1.1.0
+urllib3==1.26.9
