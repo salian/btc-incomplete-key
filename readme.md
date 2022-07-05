@@ -8,11 +8,18 @@ Supports compressed WIF keys.
 
 ### Requirements:
 
-Have a damaged BTC key with a few characters missing.
+Say you have a damaged BTC key with a few characters missing.
+
+Mask the BTC key to the correct expected length, with asterisks (`*`) to indicate the number and positions of missing characters.
+
+For example if you have a hex key which should be 64 characters, and you are missing the _first five_ characters. Your masked key should then start with 5 asterisks (*) indicating the 5 missing characters and their locations. 
+
+Eg. `*****aacf90d9f4aadd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2`
 
 #### Benchmarks 
 
 #### On a 2.9 GHz Dual-Core Intel Core i5:
+(_Needs to be updated for Hex and WIF keys_)
 
 | Missing Characters | Maximum Time To Recover a WIF Key |
 |--------------------|-----------------------------------|
