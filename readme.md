@@ -1,8 +1,10 @@
-### Recover incomplete and damaged BTC keys with missing characters.
+## Recover missing characters from a BTC key, without GPU.
 
-Use randomization or brute force to recover a damaged BTC key.
+Use randomization or brute force to recover a damaged BTC key. 
 
-Supports compressed WIF keys.
+Does not convert every possible private key to an address. Instead, for speed, only tests the checksum of potential keys to see if the checksum is valid.
+
+Supports compressed WIF keys. 
 
 ### Requirements:
 
