@@ -41,6 +41,12 @@ Eg. `*****aacf90d9f4aadd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2`
 
 `main.py --maskedkey=ef235aacf90d9f***dd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2 --address=1EUXSxuUVy2PC5enGXR1a3yxbEjNWMHuem`
 
+#### Try your luck at recovering a WIF key with many unknown letters
+
+If missing more than 10 characters, use the _random_ mode to try randomly generated guesses instead of brute-forcing through a sequential list. In a GPU world, this gives CPU users a shot, if they are lucky, to beat the GPUs processing the keyspace sequentially.
+
+`--maskedkey=L5EZftvrYaSudiozVRzTqLcHLNDo***H5HSfM9BAN6tMJX8oTWz6 --address=1EUXSxuUVy2PC5enGXR1a3yxbEjNWMHuem --mode=random`
+
 ### Arguments Reference
 
 ```

@@ -1,10 +1,12 @@
 # import json
-import string
 # import secrets
+import string
 # from typing import Generator
 # from random import SystemRandom as RND
 # import re
 import argparse
+import sys
+
 import trotter
 from tqdm import tqdm
 from time import sleep
@@ -20,6 +22,11 @@ from btc_com import explorer as btc_explorer
 
 # Masked_key should be like 'L5EZftvrYaSu****V*zTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
 # with asterisks replacing unknown characters. Positions of unknown characters MUST be known.
+
+
+def write_to_log(data):
+    with open("output_log.txt", "a") as file:
+        file.write(data + '\n')
 
 
 def complete_key(masked_key_string, missing_letters):
@@ -68,6 +75,7 @@ def parse_arguments():
     cli_argument_parser.add_argument("--maskedkey", help="private key with unknown characters replaced by *", metavar="MY**KEY", default=None)
     cli_argument_parser.add_argument("--address", help="the target BTC address if known", default=None)
     cli_argument_parser.add_argument("--fetchbalances", help="display BTC balance for potential addresses (slower)", action='store_true', default=False)
+    cli_argument_parser.add_argument("--mode", help="sequential or random", default='sequential', choices=['sequential', 'random'])
     # cli_argument_parser.add_argument("--resetthreshold", type=int, help="number of times to retry before skipping", default=3)
     # cli_argument_parser.add_argument("--silent", help="do not output to stdout", action='store_true', default=False)
     # cli_argument_parser.add_argument("--verbose", help="extra-detailed output to stdout", action='store_true', default=False)
@@ -91,14 +99,14 @@ if __name__ == '__main__':
     masked_key = cli_arguments.maskedkey
     target_address = cli_arguments.address
     fetch_balances = cli_arguments.fetchbalances
+    mode = cli_arguments.mode
     missing_length = masked_key.count('*')
     key_length = len(masked_key)
     print(f"Looking for {missing_length} characters in {masked_key} to match address {target_address}")
     match key_length:
-        case 52:
+        case 51 | 52:
             secret_type = 'WIF'
-            allowed_characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
-            # "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" as keys are case-sensitive
+            allowed_characters = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'  # Base 58 Alphabet w/o 0, O, I
         case 64:
             # Hex
             secret_type = 'classic'
@@ -116,22 +124,43 @@ if __name__ == '__main__':
     # print(missing_letters_master_list)
     # print(len(missing_letters_master_list))
     # print(missing_letters.index("abcdefghijkl"))
+    #
 
-    for i in tqdm(range(len(missing_letters_master_list))):
-        potential_key = complete_key(masked_key, missing_letters_master_list[i])
+    try:
+        # print(missing_letters_master_list)
+        max_loop_length = len(missing_letters_master_list)
+    except OverflowError:
+        max_loop_length = sys.maxsize
+        if mode == 'sequential':
+            print(f"Warning: Some letters will not be processed in sequential mode because "
+                  f"the possible space is too large. Try random mode.")
+
+    for i in tqdm(range(max_loop_length)):
+        if mode == 'sequential':
+            potential_key = complete_key(masked_key, missing_letters_master_list[i])
+        elif mode == 'random':
+            # random_index = secrets.randbelow(len(missing_letters_master_list))  # OverflowError
+            # random_index = secrets.choice(missing_letters_master_list)  # OverflowError
+            potential_key = complete_key(masked_key, missing_letters_master_list.random())
+
         try:
+            # This will fail with a ValueError if the potential key checksum
             address = btc_address_from_private_key(potential_key, secret_type=secret_type)
+
             # print(potential_key, ':', address)
             if target_address:
                 # We wish to match the address with an expected output address
                 if address != cli_arguments.address:
                     continue
+
+            print(f"key: {potential_key} address: {address}")
             if fetch_balances:
                 # We wish to fetch BTC account balances from the internet
                 balance, tx_count = fetch_balance_for_btc_address(address)
-                print(f"key: {potential_key} address: {address} tx_count: {tx_count} balance: {balance}")
-            else:
-                print(f"key: {potential_key} address: {address}")
+                print(f"tx_count: {tx_count} balance: {balance}")
+
+            write_to_log(f"key: {potential_key} address: {address}")
+
         except ValueError:
             # Address Checksum Failed
             pass
