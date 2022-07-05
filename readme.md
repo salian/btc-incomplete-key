@@ -20,7 +20,21 @@ Have a damaged BTC key with a few characters missing.
 | 5                  | 2 hours                           |
 | 6                  | 74 hours                          |
 
-### Usage:
+### Examples
+
+#### Recover a WIF key with an unknown address
+
+`main.py --maskedkey=L5EZftvrYaSudiozVRzTqLcHLNDo***H5HSfM9BAN6tMJX8oTWz6`
+
+#### Recover a WIF key with a known address
+
+`main.py --maskedkey=L5EZftvrYaSudiozVRzTqLcHLNDo***H5HSfM9BAN6tMJX8oTWz6 --address=1EUXSxuUVy2PC5enGXR1a3yxbEjNWMHuem`
+
+#### Recover a Hex key with a known address
+
+`main.py --maskedkey=ef235aacf90d9f***dd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2 --address=1EUXSxuUVy2PC5enGXR1a3yxbEjNWMHuem`
+
+### Arguments Reference
 
 ```
 usage: main.py [-h] [--maskedkey MY**KEY] [--address ADDRESS]
