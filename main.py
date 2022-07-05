@@ -1,9 +1,10 @@
-import json
+# import json
 import string
-import secrets
-from typing import Generator
-from random import SystemRandom as RND
-import re
+# import secrets
+# from typing import Generator
+# from random import SystemRandom as RND
+# import re
+import argparse
 import trotter
 from tqdm import tqdm
 from time import sleep
@@ -12,12 +13,10 @@ from hdwallet.symbols import BTC
 from btc_com import explorer as btc_explorer
 
 # test key: 'L5EZftvrYaSudiozVRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
-# test mask: 'L5EZftvrYaSu****VRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
+# test mask: 'L5EZftvrYaSudiozVRzTqLcHLNDo***H5HSfM9BAN6tMJX8oTWz6'
+# test key:  'ef235aacf90d9f4aadd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2'
+# test mask: 'ef235aacf90d9f***dd8c92e4b2562e1d9eb97f0df9ba3b508258739cb013db2'
 # corresponding address: '1EUXSxuUVy2PC5enGXR1a3yxbEjNWMHuem'
-
-# masked_key = 'L5EZftvrYaSu******zTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
-# masked_key = 'L5EZftvrYaSu************LNDoVn7H5HSfM9BAN6tMJX8oTWz6'
-masked_key = 'L5EZftvrYa*udiozVRzTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
 
 # Masked_key should be like 'L5EZftvrYaSu****V*zTqLcHLNDoVn7H5HSfM9BAN6tMJX8oTWz6'
 # with asterisks replacing unknown characters. Positions of unknown characters MUST be known.
@@ -34,7 +33,7 @@ def complete_key(masked_key_string, missing_letters):
 def fetch_balance_for_btc_address(btc_address):
     # Get BTC balance from web API. This is rate limited
     address_info = btc_explorer.get_address(btc_address)
-    sleep(.25)  # To play nice with the API Rate limit - recommend sleep(10)
+    sleep(1.25)  # To play nice with the API Rate limit - recommend sleep(10)
     return address_info.balance, address_info.tx_count
 
 
@@ -61,11 +60,58 @@ def btc_address_from_private_key(my_secret, secret_type='WIF'):
     return hdwallet.p2pkh_address()
 
 
+def parse_arguments():
+    cli_argument_parser = argparse.ArgumentParser(
+        description='Recover incomplete or damaged BTC private keys',
+        epilog="© Pranab Salian, 2022 - All rights reserved."
+    )
+    cli_argument_parser.add_argument("--maskedkey", help="private key with unknown characters replaced by *", metavar="MY**KEY", default=None)
+    cli_argument_parser.add_argument("--address", help="the target BTC address if known", default=None)
+    cli_argument_parser.add_argument("--fetchbalances", help="display BTC balance for potential addresses (slower)", action='store_true', default=False)
+    # cli_argument_parser.add_argument("--resetthreshold", type=int, help="number of times to retry before skipping", default=3)
+    # cli_argument_parser.add_argument("--silent", help="do not output to stdout", action='store_true', default=False)
+    # cli_argument_parser.add_argument("--verbose", help="extra-detailed output to stdout", action='store_true', default=False)
+
+    namespace_arguments = cli_argument_parser.parse_args()
+    # cli_argument_parser.print_help()  # Uncomment to review the args
+
+    # Exit if no masked key was provided
+    if namespace_arguments.maskedkey is None:
+        cli_argument_parser.print_help()
+        cli_argument_parser.exit("Error: No masked key was provided.")
+
+    return namespace_arguments
+
+
+# Having cli_arguments as a global, defined at module level
+# seems most compatible with multiprocessing and windows
+cli_arguments = parse_arguments()
+
 if __name__ == '__main__':
+    masked_key = cli_arguments.maskedkey
+    target_address = cli_arguments.address
+    fetch_balances = cli_arguments.fetchbalances
     missing_length = masked_key.count('*')
-    print(f"Looking for {missing_length} characters in {masked_key}")
-    allowed_characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
-    # "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" as keys are case-sensitive
+    key_length = len(masked_key)
+    print(f"Looking for {missing_length} characters in {masked_key} to match address {target_address}")
+    match key_length:
+        case 52:
+            secret_type = 'WIF'
+            allowed_characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
+            # "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" as keys are case-sensitive
+        case 64:
+            # Hex
+            secret_type = 'classic'
+            allowed_characters = string.digits + "ABCDEF"
+        case 111:
+            # Extended Private Key
+            secret_type = 'extended'
+            allowed_characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        case _:
+            # Unknown Length
+            secret_type = 'unhandled'
+            allowed_characters = string.ascii_uppercase + string.ascii_lowercase + string.digits
+
     missing_letters_master_list = trotter.Amalgams(missing_length, allowed_characters)
     # print(missing_letters_master_list)
     # print(len(missing_letters_master_list))
@@ -74,10 +120,18 @@ if __name__ == '__main__':
     for i in tqdm(range(len(missing_letters_master_list))):
         potential_key = complete_key(masked_key, missing_letters_master_list[i])
         try:
-            address = btc_address_from_private_key(potential_key, secret_type='WIF')
-            # print(address)
-            balance, tx_count = fetch_balance_for_btc_address(address)
-            print(f"key: {potential_key} address: {address} tx_count: {tx_count} balance: {balance}")
+            address = btc_address_from_private_key(potential_key, secret_type=secret_type)
+            # print(potential_key, ':', address)
+            if target_address:
+                # We wish to match the address with an expected output address
+                if address != cli_arguments.address:
+                    continue
+            if fetch_balances:
+                # We wish to fetch BTC account balances from the internet
+                balance, tx_count = fetch_balance_for_btc_address(address)
+                print(f"key: {potential_key} address: {address} tx_count: {tx_count} balance: {balance}")
+            else:
+                print(f"key: {potential_key} address: {address}")
         except ValueError:
             # Address Checksum Failed
             pass

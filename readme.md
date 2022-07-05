@@ -1,4 +1,4 @@
-## Recover missing characters from a BTC key, without GPU.
+## Recover missing characters from an incomplete BTC key, without GPU.
 
 Use randomization or brute force to recover a damaged BTC key. 
 
