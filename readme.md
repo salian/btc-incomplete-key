@@ -53,7 +53,7 @@ If missing more than 10 characters, use the _random_ mode to try randomly genera
 
 If you don't have Python 3.10 or above, download and install it from the official website: https://www.python.org/downloads/
 
-#### Virtual Environment
+#### Get the Project Files
 
 Download all the project files from github into a directory, or pull them using git.
 
@@ -72,6 +72,7 @@ For more about virtual environments, consult the documentation: https://docs.pyt
 In the Terminal `source <path_to_venv>/bin/activate`
 
 ###### On Windows:
+
 In cmd.exe:
 
 `<venv>\Scripts\activate.bat`
@@ -79,7 +80,6 @@ In cmd.exe:
 In Powershell:
 
 `<venv>\Scripts\Activate.ps1`
-
 
 ##### Install the dependencies within your virtual environment.
 
